@@ -20,13 +20,14 @@ import glob
 import logging
 import argparse
 import warnings
+import pymatgen
 
 from pymatgen.io.vasp.outputs import BSVasprun
 from pymatgen.electronic_structure.bandstructure import get_reconstructed_band_structure
 from pymatgen.electronic_structure.plotter import BSPlotter
 import matplotlib as mpl
 
-mpl.use("Agg")
+mpl.use("TkAgg")
 __author__ = "Arthur Youd"
 __version__ = "1.0"
 __maintainer__ = "Alex Ganose"
@@ -57,8 +58,18 @@ def brillplot(filenames=None, prefix=None, directory=None,
         bs = vr.get_band_structure(line_mode=True)
         bandstructures.append(bs)
     bs = get_reconstructed_band_structure(bandstructures)
-    plotter = BSPlotter(bs)
-    plt = plotter.plot_brillouin()
+    
+    labels = {}
+    for k in bs.kpoints:
+        if k.label:
+            labels[k.label] = k.frac_coords
+    lines = []
+    for b in bs.branches:
+        lines.append([bs.kpoints[b['start_index']].frac_coords,
+            bs.kpoints[b['end_index']].frac_coords])
+
+    plt = pymatgen.electronic_structure.plotter.plot_brillouin_zone(bs.lattice_rec, lines = lines, labels = labels)
+
 
     basename = "brillouin.{}".format(image_format)
     filename = "{}_{}".format(prefix, basename) if prefix else basename
